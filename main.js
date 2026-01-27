@@ -149,6 +149,7 @@ const downloadQR = document.getElementById("downloadQR");
 const scanStatus = document.getElementById("scanStatus");
 const spotRegForm = document.getElementById("spotRegForm");
 const editForm = document.getElementById("editForm");
+const retryCamera = document.getElementById("retryCamera");
 
 function getAllAlumni() {
     const combined = [...alumniData, ...dbState.spotRegistrations];
@@ -343,8 +344,14 @@ document.getElementById("closeQR").onclick = () => { qrModal.style.display = "no
 document.getElementById("closeEdit").onclick = () => { editModal.style.display = "none"; };
 document.getElementById("closeSpotReg").onclick = () => { spotRegModal.style.display = "none"; };
 document.getElementById("closeScanner").onclick = () => {
-    if (html5QrCode && html5QrCode.getState() === 2) {
-        html5QrCode.stop().then(() => { scannerModal.style.display = "none"; });
+    retryCamera.style.display = "none";
+    if (html5QrCode && (html5QrCode.getState() === 2 || html5QrCode.getState() === 3)) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            scannerModal.style.display = "none";
+        }).catch(() => {
+            scannerModal.style.display = "none";
+        });
     } else {
         scannerModal.style.display = "none";
     }
@@ -401,30 +408,63 @@ editForm.onsubmit = async (e) => {
 
 // Scanner Logic
 let html5QrCode = null;
-function startScanner() {
-    scanStatus.textContent = "Initializing camera...";
-    if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
 
-    html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-            const allData = getAllAlumni();
-            const person = allData.find(p => p.id === decodedText);
-            if (person) {
-                markPresent(decodedText);
-                scanStatus.textContent = `SUCCESS: Marked ${person.name} as Present!`;
-                scanStatus.style.color = "green";
+async function startScanner() {
+    scanStatus.textContent = "Initializing camera...";
+    scanStatus.style.color = "#111";
+    retryCamera.style.display = "none";
+
+    // 1. Cleanup existing
+    if (html5QrCode) {
+        try {
+            if (html5QrCode.getState() === 2) await html5QrCode.stop();
+            html5QrCode.clear();
+        } catch (e) { console.error("Cleanup error", e); }
+    }
+
+    html5QrCode = new Html5Qrcode("reader");
+
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+    // 2. Try starting with environment (back) camera
+    try {
+        await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+    } catch (err) {
+        console.warn("Environment camera failed, trying device list...", err);
+        // 3. Fallback: try to find any camera
+        try {
+            const devices = await Html5Qrcode.getCameras();
+            if (devices && devices.length > 0) {
+                // Try the last one (often the back camera on Android)
+                await html5QrCode.start(devices[devices.length - 1].id, config, onScanSuccess);
             } else {
-                scanStatus.textContent = "Error: Invalid QR Code";
-                scanStatus.style.color = "red";
+                throw new Error("No cameras found.");
             }
+        } catch (err2) {
+            console.error("Scanner fallback failed", err2);
+            scanStatus.textContent = "Camera Error: " + (err2.message || err2);
+            scanStatus.style.color = "red";
+            retryCamera.style.display = "block";
         }
-    ).catch(err => {
-        scanStatus.textContent = "Camera Error: " + err;
-        scanStatus.style.color = "red";
-    });
+    }
 }
+
+function onScanSuccess(decodedText) {
+    const allData = getAllAlumni();
+    const person = allData.find(p => p.id === decodedText);
+    if (person) {
+        markPresent(decodedText);
+        scanStatus.textContent = `SUCCESS: Marked ${person.name} as Present!`;
+        scanStatus.style.color = "green";
+        // Optional: vibration feedback if supported
+        if (navigator.vibrate) navigator.vibrate(200);
+    } else {
+        scanStatus.textContent = "Error: Invalid QR Code";
+        scanStatus.style.color = "red";
+    }
+}
+
+retryCamera.onclick = () => startScanner();
 
 // Initializing Real-time Listeners
 function initListeners() {
