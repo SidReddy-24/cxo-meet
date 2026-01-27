@@ -169,12 +169,15 @@ const retryCamera = document.getElementById("retryCamera");
 
 function getAllAlumni() {
     const combined = [...alumniData, ...dbState.spotRegistrations];
-    return combined.map(a => {
+    const resolved = combined.map(a => {
         if (dbState.editedAlumni[a.id]) {
             return { ...a, ...dbState.editedAlumni[a.id] };
         }
         return a;
     });
+
+    // Alphabetical Sorting
+    return resolved.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function unique(arr) { return [...new Set(arr)]; }

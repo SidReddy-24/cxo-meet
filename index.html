@@ -579,7 +579,7 @@
   <div class="header">
     <div class="left-info">
       <p class="countText" id="countText">Showing 0 records</p>
-      <div class="totalBox">Total Alumni: <span id="totalAlumni">0</span></div>
+      <div class="totalBox admin-only" style="display:none;">Total Alumni: <span id="totalAlumni">0</span></div>
 
       <div class="btns">
         <button class="btn-light admin-only" id="exportBtn">Export CSV</button>
@@ -597,7 +597,7 @@
       <select id="companyFilter">
         <option value="all">All Companies</option>
       </select>
-      <button id="resetBtn">Reset (Show Present)</button>
+      <button id="resetBtn" class="admin-only">Reset (Show Present)</button>
       <button id="showAllBtn" class="btn-light">Show All</button>
     </div>
   </div>
