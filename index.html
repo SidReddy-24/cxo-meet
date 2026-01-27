@@ -269,9 +269,8 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 980px;
-      table-layout: fixed;
-      /* ✅ same column size */
+      min-width: 900px;
+      table-layout: auto;
     }
 
     thead th {
@@ -300,15 +299,14 @@
 
     /* PHOTO COLUMN (no heading text) */
     th.photo-head {
-      width: 90px;
+      width: 60px;
       text-align: center;
       color: transparent;
-      /* hide heading */
       user-select: none;
     }
 
     td.photo-cell {
-      width: 90px;
+      width: 60px;
       text-align: center;
     }
 
@@ -389,6 +387,11 @@
       .header {
         flex-direction: column;
         align-items: stretch;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
     }
 

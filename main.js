@@ -194,7 +194,7 @@ function renderTable(data) {
         const statusText = isPresent ? "Present" : "Absent";
 
         const photoHTML = a.photo
-            ? `<img class="avatar" src="${a.photo}" alt="${a.name}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'empty-avatar\\'></div>';">`
+            ? `<img class="avatar" src="/${a.photo}" alt="${a.name}" onerror="console.log('Failed to load image:', this.src); this.style.display='none'; this.parentElement.innerHTML='<div class=\\'empty-avatar\\'></div>';">`
             : `<div class="empty-avatar"></div>`;
 
         tr.innerHTML = `
