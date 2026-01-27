@@ -429,6 +429,8 @@ async function startScanner() {
     // 2. Try starting with environment (back) camera
     try {
         await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+        scanStatus.textContent = "Scanner Active - Align QR Code";
+        scanStatus.style.color = "#28a745";
     } catch (err) {
         console.warn("Environment camera failed, trying device list...", err);
         // 3. Fallback: try to find any camera
@@ -437,6 +439,8 @@ async function startScanner() {
             if (devices && devices.length > 0) {
                 // Try the last one (often the back camera on Android)
                 await html5QrCode.start(devices[devices.length - 1].id, config, onScanSuccess);
+                scanStatus.textContent = "Scanner Active - Align QR Code";
+                scanStatus.style.color = "#28a745";
             } else {
                 throw new Error("No cameras found.");
             }
