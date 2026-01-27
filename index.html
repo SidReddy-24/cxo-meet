@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CXO MEET - Alumni Dashboard</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f6f9;
+      padding: 14px;
+      color: #111;
+    }
+
+    /* Auth Overlay */
+    #authOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #1a1a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      color: white;
+      text-align: center;
+    }
+
+    .auth-card {
+      background: #2d2d2d;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .auth-card h2 {
+      margin-top: 0;
+      color: #ffd700;
+    }
+
+    .auth-card input {
+      width: 100%;
+      padding: 12px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #3d3d3d;
+      color: white;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .auth-card button {
+      width: 100%;
+      padding: 12px;
+      background: #ffd700;
+      color: #111;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .auth-card button:hover {
+      background: #ffc107;
+    }
+
+    .auth-error {
+      color: #ff4d4d;
+      margin-top: 10px;
+      display: none;
+    }
+
+    body.authenticated #authOverlay {
+      display: none;
+    }
+
+    /* Toast Notifications */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #333;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 30px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      z-index: 10001;
+      transition: transform 0.3s ease;
+      font-weight: bold;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #toast.error {
+      background: #dc3545;
+    }
+
+    #toast.success {
+      background: #28a745;
+    }
+
+    /* ✅ TOP BAR (ITM LOGO AS BACKGROUND + CXO MEET CENTER) */
+    .topbar {
+      position: relative;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+      padding: 28px 14px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    .topbar-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url("itm logo.jpeg");
+      /* ✅ Put itm logo.jpeg in same folder */
+      background-repeat: no-repeat;
+      background-position: left 18px center;
+      background-size: 120px auto;
+      opacity: 0.5;
+      /* ✅ 50% transparency */
+      pointer-events: none;
+    }
+
+    .topbar-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+
+    .center-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1a1a1a;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .logout-btn {
+      position: absolute;
+      right: 14px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .logout-btn:hover {
+      background: #c82333;
+    }
+
+    /* HEADER BELOW TOPBAR */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .left-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .countText {
+      font-size: 14px;
+      color: #444;
+      margin: 0;
+    }
+
+    .totalBox {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      width: fit-content;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      width: 100%;
+      max-width: 780px;
+    }
+
+    select,
+    input {
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      outline: none;
+      background: #fff;
+      min-width: 200px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      background: #111;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .btn-light {
+      background: #fff;
+      color: #111;
+      border: 1px solid #ddd;
+    }
+
+    .btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* TABLE */
+    .table-wrap {
+      margin-top: 10px;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+      table-layout: fixed;
+      /* ✅ same column size */
+    }
+
+    thead th {
+      background: #f0f0f0;
+      font-weight: 800;
+      font-size: 14px;
+      text-align: left;
+      padding: 12px;
+      border-bottom: 2px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tbody td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      vertical-align: middle;
+      word-wrap: break-word;
+    }
+
+    tbody tr:hover {
+      background: #fafafa;
+    }
+
+    /* PHOTO COLUMN (no heading text) */
+    th.photo-head {
+      width: 90px;
+      text-align: center;
+      color: transparent;
+      /* hide heading */
+      user-select: none;
+    }
+
+    td.photo-cell {
+      width: 90px;
+      text-align: center;
+    }
+
+    .avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      margin: 0 auto;
+      border: 1px solid #ddd;
+      background: #f2f2f2;
+    }
+
+    .empty-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: #e9ecef;
+      border: 1px solid #ddd;
+      margin: 0 auto;
+    }
+
+    /* Print */
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+
+      .filters,
+      .btns,
+      .topbar {
+        display: none !important;
+      }
+
+      .table-wrap {
+        box-shadow: none;
+        border-radius: 0;
+      }
+
+      thead th {
+        position: static;
+      }
+    }
+
+    /* MOBILE FIX */
+    @media(max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .topbar {
+        padding: 22px 12px;
+      }
+
+      .topbar-bg {
+        background-position: left 12px center;
+        background-size: 90px auto;
+      }
+
+      .center-title {
+        font-size: 22px;
+        letter-spacing: 1px;
+      }
+
+      .filters {
+        justify-content: flex-start;
+        max-width: 100%;
+      }
+
+      select,
+      input {
+        min-width: 160px;
+        width: 100%;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    /* Attendance Badges */
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .status-present {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-absent {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    /* QR Button */
+    .qr-btn {
+      background: #f0f0f0;
+      color: #333;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      border: 1px solid #ccc;
+    }
+
+    /* Scanner Modal */
+    #scannerModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 24px;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 500px;
+      position: relative;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    #reader {
+      width: 100%;
+      min-height: 250px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* QR View Modal */
+    #qrModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #qrcode-container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Authentication Overlay -->
+  <div id="authOverlay">
+    <div class="auth-card">
+      <h2>CXO Meet 2026</h2>
+      <p>Please enter the dashboard password</p>
+      <form id="authForm">
+        <input type="password" id="passwordInput" placeholder="Password" required autofocus>
+        <button type="submit">Access Dashboard</button>
+        <div id="authError" class="auth-error">Incorrect password!</div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- ✅ TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-bg"></div>
+    <div class="topbar-content">
+      <div class="center-title">CXO MEET</div>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="left-info">
+      <p class="countText" id="countText">Showing 0 records</p>
+      <div class="totalBox">Total Alumni: <span id="totalAlumni">0</span></div>
+
+      <div class="btns">
+        <button class="btn-light" id="exportBtn">Export CSV</button>
+        <button class="btn-light" id="printBtn">Print</button>
+        <button id="openScannerBtn" style="background: #28a745;">Open QR Scanner</button>
+        <button id="openSpotRegBtn" style="background: #007bff;">Spot Registration</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <input id="searchInput" type="text" placeholder="Search Name..." />
+      <select id="batchFilter">
+        <option value="all">All Batches</option>
+      </select>
+      <select id="companyFilter">
+        <option value="all">All Companies</option>
+      </select>
+      <button id="resetBtn">Reset (Show Present)</button>
+      <button id="showAllBtn" class="btn-light">Show All</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="photo-head">.</th>
+          <th>Name</th>
+          <th>Batch</th>
+          <th>Company Name</th>
+          <th>Designation</th>
+          <th>Attendance</th>
+          <th>QR</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Scanner Modal -->
+  <div id="scannerModal">
+    <div class="modal-content">
+      <span class="close-modal" id="closeScanner">&times;</span>
+      <h2 style="margin-top:0;">Scan QR Code</h2>
+      <div id="reader"></div>
+      <p id="scanStatus" style="text-align:center; font-weight:bold; margin-top:10px;"></p>
+    </div>
+  </div>
+
+  <!-- QR View Modal -->
+  <div id="qrModal">
+    <div id="qrcode-container">
+      <span class="close-modal" id="closeQR" style="position:static; float:right;">&times;</span>
+      <h3 id="qrName"></h3>
+      <div id="qrcode" style="display:flex; justify-content:center; margin:20px;"></div>
+      <button id="downloadQR" class="qr-btn">Download QR</button>
+    </div>
+  </div>
+
+  <!-- Spot Registration Modal -->
+  <div id="spotRegModal" class="modal-overlay">
+    <div class="modal-content">
+      <span class="close-modal" id="closeSpotReg">&times;</span>
+      <h2 style="margin-top:0;">Spot Registration</h2>
+      <form id="spotRegForm">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="regName" required placeholder="Enter full name" />
+        </div>
+        <div class="form-group">
+          <label>Batch</label>
+          <input type="text" id="regBatch" placeholder="e.g. 2010-2012" />
+        </div>
+        <div class="form-group">
+          <label>Company</label>
+          <input type="text" id="regCompany" placeholder="Account/Organization" />
+        </div>
+        <div class="form-group">
+          <label>Designation</label>
+          <input type="text" id="regDesignation" placeholder="Job Title" />
+        </div>
+        <button type="submit"
+          style="width:100%; padding:12px; background:#007bff; color:#fff; border:none; border-radius:8px; margin-top:10px; font-weight:bold;">Register
+          & Mark Present</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Member Modal -->
+  <div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+      <span class="close-modal" id="closeEdit">&times;</span>
+      <h2 style="margin-top:0;">Edit Details</h2>
+      <form id="editForm">
+        <input type="hidden" id="editId" />
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="editName" required />
+        </div>
+        <div class="form-group">
+          <label>Batch</label>
+          <input type="text" id="editBatch" />
+        </div>
+        <div class="form-group">
+          <label>Company</label>
+          <input type="text" id="editCompany" />
+        </div>
+        <div class="form-group">
+          <label>Designation</label>
+          <input type="text" id="editDesignation" />
+        </div>
+        <button type="submit"
+          style="width:100%; padding:12px; background:#ffc107; color:#333; border:none; border-radius:8px; margin-top:10px; font-weight:bold;">Save
+          Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+
+</html>
