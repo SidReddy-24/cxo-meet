@@ -265,7 +265,17 @@ async function toggleStatus(id) {
         showToast("Admin access required", "error");
         return;
     }
+
+    // Confirmation Alert
+    const all = getAllAlumni();
+    const p = all.find(x => x.id === id);
     const newStatus = !dbState.attendance[id];
+    const statusLabel = newStatus ? "PRESENT" : "ABSENT";
+
+    if (!confirm(`Are you sure you want to mark ${p.name} as ${statusLabel}?`)) {
+        return;
+    }
+
     await setDoc(doc(db, "attendance", id), { present: newStatus });
 }
 
