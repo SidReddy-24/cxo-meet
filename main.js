@@ -241,7 +241,7 @@ function renderTable(data) {
     });
 
     countText.textContent = `Showing ${data.length} records`;
-    totalAlumni.textContent = data.length;
+    // totalAlumni.textContent = data.length; // Removed
 }
 
 function applyFilters() {
@@ -261,11 +261,16 @@ function applyFilters() {
 }
 
 async function toggleStatus(id) {
+    if (sessionStorage.getItem("authenticated") !== "true") {
+        showToast("Admin access required", "error");
+        return;
+    }
     const newStatus = !dbState.attendance[id];
     await setDoc(doc(db, "attendance", id), { present: newStatus });
 }
 
 async function markPresent(id) {
+    if (sessionStorage.getItem("authenticated") !== "true") return;
     await setDoc(doc(db, "attendance", id), { present: true });
 }
 
