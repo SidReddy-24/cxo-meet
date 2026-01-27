@@ -7,11 +7,25 @@ const authForm = document.getElementById("authForm");
 const passwordInput = document.getElementById("passwordInput");
 const authError = document.getElementById("authError");
 
+const loginBtn = document.getElementById("loginBtn");
+const closeAuth = document.getElementById("closeAuth");
+
 function checkAuth() {
     if (sessionStorage.getItem("authenticated") === "true") {
         document.body.classList.add("authenticated");
+    } else {
+        document.body.classList.remove("authenticated");
     }
 }
+
+loginBtn.onclick = () => {
+    authOverlay.style.display = "flex";
+    passwordInput.focus();
+};
+
+closeAuth.onclick = () => {
+    authOverlay.style.display = "none";
+};
 
 authForm.onsubmit = (e) => {
     e.preventDefault();
@@ -19,6 +33,8 @@ authForm.onsubmit = (e) => {
         sessionStorage.setItem("authenticated", "true");
         document.body.classList.add("authenticated");
         authError.style.display = "none";
+        authOverlay.style.display = "none";
+        passwordInput.value = "";
     } else {
         authError.style.display = "block";
         passwordInput.value = "";
@@ -204,9 +220,9 @@ function renderTable(data) {
       <td>${a.batch ? a.batch : "-"}</td>
       <td>${a.company}</td>
       <td>${a.designation}</td>
-      <td><span class="status-badge ${statusClass}" style="cursor:pointer;" id="status-${a.id}">${statusText}</span></td>
-        <td><button class="qr-btn" id="qr-${a.id}">View QR</button></td>
-        <td>
+       <td><span class="status-badge ${statusClass}" id="status-${a.id}">${statusText}</span></td>
+        <td class="admin-only"><button class="qr-btn" id="qr-${a.id}">View QR</button></td>
+        <td class="admin-only">
             <button class="qr-btn" style="background:#ffc107;" id="edit-${a.id}">Edit</button>
             <button class="qr-btn" style="background:#dc3545; color:#fff; border-color:#dc3545;" id="remove-${a.id}">Remove</button>
         </td>
