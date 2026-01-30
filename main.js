@@ -214,7 +214,7 @@ function renderTable(data) {
         const statusClass = isPresent ? "status-present" : "status-absent";
         const statusText = isPresent ? "Present" : "Absent";
 
-        const photoSrc = (a.photo && a.photo.startsWith('http')) ? a.photo : `/${a.photo}`;
+        const photoSrc = (a.photo && (a.photo.startsWith('http') || a.photo.startsWith('data:'))) ? a.photo : `/${a.photo}`;
         const photoHTML = a.photo
             ? `<img class="avatar" src="${photoSrc}" alt="${a.name}" onerror="console.log('Failed to load image:', this.src); this.style.display='none'; this.parentElement.innerHTML='<div class=\\'empty-avatar\\'></div>';">`
             : `<div class="empty-avatar"></div>`;
@@ -432,6 +432,43 @@ spotRegForm.onsubmit = async (e) => {
     }
 };
 
+// Helper to resize and convert image to Base64
+function resizeAndConvertToBase64(file, maxWidth = 300, maxHeight = 300) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width *= maxHeight / height;
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL("image/jpeg", 0.7)); // Compress to 70% quality
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+}
+
 editForm.onsubmit = async (e) => {
     e.preventDefault();
     const subBtn = e.target.querySelector('button[type="submit"]');
@@ -450,12 +487,12 @@ editForm.onsubmit = async (e) => {
         const fileInput = document.getElementById("editPhotoFile");
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
-            const storageRef = ref(storage, `alumni-photos/${id}/${file.name}`);
-            await uploadBytes(storageRef, file);
-            photo = await getDownloadURL(storageRef);
+            // Convert to Base64 (max 300x300px)
+            photo = await resizeAndConvertToBase64(file);
         }
 
-        await setDoc(doc(db, "editedAlumni", id), { name, batch, company, designation, photo });
+        await setDoc(doc(db, "editedAlumni", id), { name, batch, company, designation, photo }, { merge: true });
+
         editModal.style.display = "none";
         showToast("Details updated successfully!");
     } catch (err) {
