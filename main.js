@@ -1,4 +1,4 @@
-import { db } from './firebase-config.js';
+import { db, storage } from './firebase-config.js';
 
 // --- AUTHENTICATION ---
 const DASHBOARD_PASSWORD = "itmcxomeet123";
@@ -71,6 +71,7 @@ import {
     getDocs,
     query
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Html5Qrcode } from "html5-qrcode";
 import QRCode from "qrcode";
 
@@ -213,8 +214,9 @@ function renderTable(data) {
         const statusClass = isPresent ? "status-present" : "status-absent";
         const statusText = isPresent ? "Present" : "Absent";
 
+        const photoSrc = (a.photo && a.photo.startsWith('http')) ? a.photo : `/${a.photo}`;
         const photoHTML = a.photo
-            ? `<img class="avatar" src="/${a.photo}" alt="${a.name}" onerror="console.log('Failed to load image:', this.src); this.style.display='none'; this.parentElement.innerHTML='<div class=\\'empty-avatar\\'></div>';">`
+            ? `<img class="avatar" src="${photoSrc}" alt="${a.name}" onerror="console.log('Failed to load image:', this.src); this.style.display='none'; this.parentElement.innerHTML='<div class=\\'empty-avatar\\'></div>';">`
             : `<div class="empty-avatar"></div>`;
 
         tr.innerHTML = `
@@ -333,6 +335,8 @@ window.openEditModal = function (id) {
     document.getElementById("editBatch").value = person.batch || "";
     document.getElementById("editCompany").value = person.company || "";
     document.getElementById("editDesignation").value = person.designation || "";
+    document.getElementById("editPhotoUrl").value = person.photo || "";
+    document.getElementById("editPhotoFile").value = "";
 
     editModal.style.display = "flex";
 };
@@ -430,14 +434,37 @@ spotRegForm.onsubmit = async (e) => {
 
 editForm.onsubmit = async (e) => {
     e.preventDefault();
-    const id = document.getElementById("editId").value;
-    const name = document.getElementById("editName").value;
-    const batch = document.getElementById("editBatch").value;
-    const company = document.getElementById("editCompany").value;
-    const designation = document.getElementById("editDesignation").value;
+    const subBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = subBtn.textContent;
+    subBtn.disabled = true;
+    subBtn.textContent = "Saving...";
 
-    await setDoc(doc(db, "editedAlumni", id), { name, batch, company, designation });
-    editModal.style.display = "none";
+    try {
+        const id = document.getElementById("editId").value;
+        const name = document.getElementById("editName").value;
+        const batch = document.getElementById("editBatch").value;
+        const company = document.getElementById("editCompany").value;
+        const designation = document.getElementById("editDesignation").value;
+        let photo = document.getElementById("editPhotoUrl").value;
+
+        const fileInput = document.getElementById("editPhotoFile");
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const storageRef = ref(storage, `alumni-photos/${id}/${file.name}`);
+            await uploadBytes(storageRef, file);
+            photo = await getDownloadURL(storageRef);
+        }
+
+        await setDoc(doc(db, "editedAlumni", id), { name, batch, company, designation, photo });
+        editModal.style.display = "none";
+        showToast("Details updated successfully!");
+    } catch (err) {
+        console.error("Update error:", err);
+        showToast("Error updating details: " + err.message, "error");
+    } finally {
+        subBtn.disabled = false;
+        subBtn.textContent = originalText;
+    }
 };
 
 // Scanner Logic
